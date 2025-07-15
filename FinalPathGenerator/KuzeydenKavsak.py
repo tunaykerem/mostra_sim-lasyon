@@ -1,0 +1,72 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from FinalPathGenerator import Circle
+def quintic_trajectory_planning(q0, qf,y_start,y_end, m):
+    n = q0.shape[0]
+    tf=10
+    # Polynomial Parameters
+    a0 = np.copy(q0)
+    a3 = (20 * qf - 20 * q0) / (2*tf*tf*tf)
+    a4 = (30 * q0 - 30 * qf) / (2*tf*tf*tf*tf)
+    a5 = (12 * qf - 12 * q0) / (2*tf*tf*tf*tf*tf)
+
+    timesteps = np.linspace(0, 10, num = round(m))
+    q = np.zeros((n,round(m)))
+
+    for i in range(len(timesteps)):
+        t = timesteps[i]
+        t_2 = t * t
+        t_3 = t_2 * t
+        t_4 = t_3 * t
+        t_5 = t_4 * t
+
+        q[:, i] = (a0) + (a3 * t_3) + (a4 * t_4) + (a5 * t_5)
+    return q
+
+def DoguBatiHareket(x_start,x_end,y_start,y_end,x_main,y_main):
+    #Batıda şerit değiştireceğimiz için x eksenindeki waypoint sayısını alacaz
+    waypoint_sayisi = round(abs((x_start-x_end))*10)
+
+    q0 = np.array([y_start])
+    qf = np.array([y_end])
+    qq = quintic_trajectory_planning(q0, qf, x_start, x_end,waypoint_sayisi)
+    q = qq.tolist()[0]
+
+    x_waypoints = []
+
+    for i in range(waypoint_sayisi):
+        x = x_start + (i * (x_end - x_start) / (waypoint_sayisi - 1))
+        x_waypoints.append(round(x, 2))
+    x_main += x_waypoints
+    y = [round(deger, 2) for deger in q]
+    y_main += y
+    return x_main,y_main
+
+def KuzeyGuneyHareket(x_start,x_end,y_start,y_end,x_main,y_main):
+    waypoint_sayisi =round( abs((y_start-y_end))*10)
+    q0 = np.array([x_start])
+    qf = np.array([x_end])
+    qq = quintic_trajectory_planning(q0, qf, y_start, y_end,waypoint_sayisi)
+    q = qq.tolist()[0]
+    y_waypoints = []
+    for i in range(waypoint_sayisi):
+        y = y_start + (i * (y_end - y_start) / (waypoint_sayisi - 1))
+        y_waypoints.append(round(y, 2))
+    y_main += y_waypoints
+    x = [round(deger, 2) for deger in q]
+    x_main += x
+    return x_main,y_main
+
+
+def Kavsak(x_main,y_main):
+    starting_angle= np.pi
+    ending_angle = 3*np.pi/2
+
+    x_main , y_main = KuzeyGuneyHareket(x_main[-1], -57, y_main[-1], 30, x_main, y_main)
+    x_main , y_main = Circle.drawingCircle(5, 5, -52, 30, starting_angle, ending_angle, x_main, y_main)
+    #alttaki -37 24 değeri 7,5 değerinin x y leri. yanı buraya ulaştıysak artık rahatlıkla şerit değiştirme yapabiliriz anlamanına geliyor.
+    x_main , y_main = DoguBatiHareket(x_main[-1], -44.5, y_main[-1], 28.8, x_main, y_main)
+
+    x_main , y_main = DoguBatiHareket(x_main[-1], -34.5, y_main[-1], 25, x_main, y_main)
+    x_main , y_main = DoguBatiHareket(x_main[-1], -26.4, y_main[-1], 28.5, x_main, y_main)
+    return x_main,y_main
